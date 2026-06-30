@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="WeatherPulse — A premium weather dashboard with real-time weather data, forecasts, AQI, and more. Search any city or use your location." />
+  <meta name="keywords" content="weather dashboard, weather app, real-time weather, temperature, humidity, wind speed" />
+  <meta name="author" content="WeatherPulse" />
+  <meta property="og:title" content="WeatherPulse — Premium Weather Dashboard" />
+  <meta property="og:description" content="Real-time weather data with beautiful glassmorphism UI" />
+  <title>WeatherPulse</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Favicon (inline SVG as data URI) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🌤️</text></svg>" />
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="theme-light" id="app-body">
+
+  <!-- ===== NAVBAR ===== -->
+  <nav class="navbar" role="navigation" aria-label="Main navigation">
+    <div class="navbar-brand">
+      <span class="brand-icon" aria-hidden="true">🌤️</span>
+      <span class="brand-name">WeatherPulse</span>
+    </div>
+
+    <div class="navbar-center" id="live-clock-nav" aria-live="polite" aria-label="Current time">
+      <span class="nav-date" id="nav-date"></span>
+      <span class="nav-time" id="nav-time"></span>
+    </div>
+
+    <div class="navbar-actions">
+      <!-- Refresh Button -->
+      <button class="nav-btn" id="refresh-btn" title="Refresh weather" aria-label="Refresh current weather">
+        <span class="btn-icon">🔄</span>
+      </button>
+
+      <!-- Dark Mode Toggle -->
+      <button class="nav-btn theme-toggle" id="theme-toggle-btn" title="Toggle dark/light mode" aria-label="Toggle dark mode" aria-pressed="false">
+        <span class="theme-icon" id="theme-icon">🌙</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ===== ANIMATED BACKGROUND PARTICLES ===== -->
+  <div class="bg-overlay" id="bg-overlay" aria-hidden="true">
+    <div class="particle p1"></div>
+    <div class="particle p2"></div>
+    <div class="particle p3"></div>
+    <div class="particle p4"></div>
+    <div class="particle p5"></div>
+  </div>
+
+  <!-- ===== MAIN CONTENT ===== -->
+  <main class="main-container" id="main-content">
+
+    <!-- ===== SEARCH SECTION ===== -->
+    <section class="search-section" aria-label="City search">
+      <div class="search-card glass-card">
+        <h1 class="search-title">Discover Your Weather</h1>
+        <p class="search-subtitle">Real-time weather intelligence for any city on Earth</p>
+
+        <div class="search-bar-wrapper">
+          <div class="search-input-group">
+            <span class="search-icon" aria-hidden="true">🔍</span>
+            <input
+              type="text"
+              id="city-input"
+              class="search-input"
+              placeholder="Search city, e.g. London, Tokyo..."
+              autocomplete="off"
+              autocorrect="off"
+              spellcheck="false"
+              aria-label="City name search"
+              aria-describedby="search-hint"
+            />
+            <button class="clear-input-btn" id="clear-input-btn" aria-label="Clear search input" title="Clear" style="display:none;">✕</button>
+          </div>
+          <button class="search-btn" id="search-btn" aria-label="Search weather">
+            <span>Search</span>
+            <span class="btn-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+
+        <p id="search-hint" class="search-hint">Press <kbd>Enter</kbd> or click Search</p>
+
+        <!-- Location Button -->
+        <button class="location-btn" id="location-btn" aria-label="Use my current location for weather">
+          <span class="loc-icon" aria-hidden="true">📍</span>
+          <span>Use My Location</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== SEARCH HISTORY ===== -->
+    <section class="history-section" id="history-section" aria-label="Recent searches" style="display:none;">
+      <div class="history-header">
+        <span class="history-label">🕐 Recent Searches</span>
+        <button class="clear-history-btn" id="clear-history-btn" aria-label="Clear all search history">Clear All</button>
+      </div>
+      <div class="history-chips" id="history-chips" role="list" aria-label="Previous searches"></div>
+    </section>
+
+    <!-- ===== LOADING SPINNER ===== -->
+    <section class="loading-section" id="loading-section" aria-live="polite" aria-label="Loading weather data" style="display:none;">
+      <div class="loading-card glass-card">
+        <div class="spinner-ring" aria-hidden="true">
+          <div class="ring"></div>
+          <div class="ring"></div>
+          <div class="ring"></div>
+        </div>
+        <p class="loading-text">Fetching weather data...</p>
+        <p class="loading-sub">Connecting to satellites 🛰️</p>
+      </div>
+    </section>
+
+    <!-- ===== ERROR SECTION ===== -->
+    <section class="error-section" id="error-section" aria-live="assertive" style="display:none;">
+      <div class="error-card glass-card" id="error-card">
+        <div class="error-emoji" id="error-emoji" aria-hidden="true">❌</div>
+        <h2 class="error-title" id="error-title">Something went wrong</h2>
+        <p class="error-message" id="error-message">Please try again.</p>
+        <button class="retry-btn" id="retry-btn" aria-label="Retry search">
+          <span>🔄 Retry</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ===== WEATHER DASHBOARD ===== -->
+    <section class="weather-dashboard" id="weather-dashboard" style="display:none;" aria-label="Weather information">
+
+      <!-- HERO CARD: City + Main Weather -->
+      <div class="hero-card glass-card" id="hero-card">
+        <div class="hero-top">
+          <div class="hero-location">
+            <h2 class="city-name" id="city-name"></h2>
+            <p class="country-name" id="country-name"></p>
+            <p class="local-time" id="local-time"></p>
+          </div>
+          <div class="hero-icon-wrapper">
+            <div class="weather-icon-animated" id="weather-icon-main" aria-label="Weather icon"></div>
+            <div class="weather-emoji-display" id="weather-emoji" aria-hidden="true"></div>
+          </div>
+        </div>
+
+        <div class="hero-bottom">
+          <div class="temp-display">
+            <span class="temperature" id="temperature" aria-label="Current temperature"></span>
+            <span class="temp-unit">°C</span>
+          </div>
+          <div class="weather-desc-group">
+            <p class="weather-condition" id="weather-condition"></p>
+            <p class="feels-like" id="feels-like"></p>
+          </div>
+          <div class="temp-range">
+            <span class="temp-min" id="temp-min" title="Min temperature" aria-label="Minimum temperature">
+              <span class="range-label">↓ Min</span>
+              <span id="min-val"></span>°C
+            </span>
+            <span class="temp-divider" aria-hidden="true">|</span>
+            <span class="temp-max" id="temp-max" title="Max temperature" aria-label="Maximum temperature">
+              <span class="range-label">↑ Max</span>
+              <span id="max-val"></span>°C
+            </span>
+          </div>
+        </div>
+
+        <!-- Action Buttons Row -->
+        <div class="hero-actions">
+          <button class="action-btn" id="copy-btn" aria-label="Copy weather report">
+            <span>📋 Copy Report</span>
+          </button>
+          <button class="action-btn" id="share-btn" aria-label="Share weather report">
+            <span>🔗 Share</span>
+          </button>
+          <button class="action-btn" id="download-btn" aria-label="Download weather report as PDF">
+            <span>📥 Download PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- STATS GRID -->
+      <div class="stats-grid">
+
+        <!-- Humidity -->
+        <div class="stat-card glass-card" aria-label="Humidity information">
+          <div class="stat-icon" aria-hidden="true">💧</div>
+          <div class="stat-info">
+            <p class="stat-label">Humidity</p>
+            <p class="stat-value" id="humidity"></p>
+          </div>
+          <div class="stat-bar-wrapper" aria-hidden="true">
+            <div class="stat-bar" id="humidity-bar"></div>
+          </div>
+        </div>
+
+        <!-- Pressure -->
+        <div class="stat-card glass-card" aria-label="Pressure information">
+          <div class="stat-icon" aria-hidden="true">🌡️</div>
+          <div class="stat-info">
+            <p class="stat-label">Pressure</p>
+            <p class="stat-value" id="pressure"></p>
+          </div>
+        </div>
+
+        <!-- Wind Speed -->
+        <div class="stat-card glass-card" aria-label="Wind information">
+          <div class="stat-icon" aria-hidden="true">💨</div>
+          <div class="stat-info">
+            <p class="stat-label">Wind Speed</p>
+            <p class="stat-value" id="wind-speed"></p>
+          </div>
+          <div class="wind-compass-wrapper" aria-hidden="true">
+            <div class="wind-compass" id="wind-compass">
+              <div class="compass-needle" id="compass-needle">↑</div>
+              <span class="compass-dir" id="compass-dir"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Visibility -->
+        <div class="stat-card glass-card" aria-label="Visibility information">
+          <div class="stat-icon" aria-hidden="true">👁️</div>
+          <div class="stat-info">
+            <p class="stat-label">Visibility</p>
+            <p class="stat-value" id="visibility"></p>
+          </div>
+        </div>
+
+        <!-- Sunrise -->
+        <div class="stat-card glass-card sunrise-card" aria-label="Sunrise time">
+          <div class="stat-icon" aria-hidden="true">🌅</div>
+          <div class="stat-info">
+            <p class="stat-label">Sunrise</p>
+            <p class="stat-value" id="sunrise"></p>
+          </div>
+        </div>
+
+        <!-- Sunset -->
+        <div class="stat-card glass-card sunset-card" aria-label="Sunset time">
+          <div class="stat-icon" aria-hidden="true">🌇</div>
+          <div class="stat-info">
+            <p class="stat-label">Sunset</p>
+            <p class="stat-value" id="sunset"></p>
+          </div>
+        </div>
+
+        <!-- UV Index -->
+        <div class="stat-card glass-card" aria-label="UV Index information">
+          <div class="stat-icon" aria-hidden="true">☀️</div>
+          <div class="stat-info">
+            <p class="stat-label">UV Index</p>
+            <p class="stat-value" id="uv-index">—</p>
+          </div>
+        </div>
+
+        <!-- AQI -->
+        <div class="stat-card glass-card" aria-label="Air Quality Index">
+          <div class="stat-icon" aria-hidden="true">🌿</div>
+          <div class="stat-info">
+            <p class="stat-label">Air Quality</p>
+            <p class="stat-value" id="aqi-value">—</p>
+            <p class="stat-sub" id="aqi-label"></p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SUN ARC + DAYLIGHT CARD -->
+      <div class="sun-card glass-card" aria-label="Daylight information">
+        <h3 class="card-heading">☀️ Daylight Overview</h3>
+        <div class="sun-arc-wrapper" aria-hidden="true">
+          <svg class="sun-arc-svg" viewBox="0 0 300 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path class="arc-track" d="M 20 150 Q 150 10 280 150" stroke-width="3" />
+            <path class="arc-progress" id="sun-arc-progress" d="M 20 150 Q 150 10 280 150" stroke-width="3" />
+            <circle class="sun-circle" id="sun-position-dot" cx="150" cy="80" r="10" />
+          </svg>
+          <div class="sun-times-row">
+            <span class="sun-label">🌅 <span id="sun-rise-label"></span></span>
+            <span class="sun-label">🌇 <span id="sun-set-label"></span></span>
+          </div>
+        </div>
+        <p class="daylight-duration" id="daylight-duration"></p>
+      </div>
+
+      <!-- TODAY'S SUMMARY CARD -->
+      <div class="summary-card glass-card" aria-label="Today's weather summary">
+        <h3 class="card-heading">📋 Today's Weather Summary</h3>
+        <p class="summary-text" id="summary-text"></p>
+      </div>
+
+      <!-- WIND DETAILS CARD -->
+      <div class="wind-card glass-card" aria-label="Wind details">
+        <h3 class="card-heading">💨 Wind Details</h3>
+        <div class="wind-details-grid">
+          <div class="wind-detail-item">
+            <span class="wd-label">Speed</span>
+            <span class="wd-value" id="wind-speed-detail"></span>
+          </div>
+          <div class="wind-detail-item">
+            <span class="wd-label">Gust</span>
+            <span class="wd-value" id="wind-gust"></span>
+          </div>
+          <div class="wind-detail-item">
+            <span class="wd-label">Direction</span>
+            <span class="wd-value" id="wind-direction-text"></span>
+          </div>
+          <div class="wind-detail-item">
+            <span class="wd-label">Degrees</span>
+            <span class="wd-value" id="wind-degrees"></span>
+          </div>
+        </div>
+      </div>
+
+    </section><!-- end weather-dashboard -->
+
+    <!-- ===== EMPTY STATE ===== -->
+    <section class="empty-state" id="empty-state" aria-label="Empty state - no search yet">
+      <div class="empty-card glass-card">
+        <div class="empty-animation" aria-hidden="true">
+          <div class="empty-cloud">☁️</div>
+          <div class="empty-sun">☀️</div>
+        </div>
+        <h2 class="empty-title">Start Exploring the Weather</h2>
+        <p class="empty-sub">Search for any city or use your location to get real-time weather data with beautiful visualizations.</p>
+        <div class="empty-features">
+          <span class="feature-tag">🌡️ Temperature</span>
+          <span class="feature-tag">💨 Wind</span>
+          <span class="feature-tag">💧 Humidity</span>
+          <span class="feature-tag">🌿 Air Quality</span>
+          <span class="feature-tag">🌅 Sunrise/Sunset</span>
+          <span class="feature-tag">☀️ UV Index</span>
+        </div>
+      </div>
+    </section>
+
+  </main><!-- end main-container -->
+
+  <!-- ===== FOOTER ===== -->
+  <footer class="app-footer" role="contentinfo">
+    <div class="footer-inner">
+      <p class="footer-brand">🌤️ <strong>WeatherPulse</strong></p>
+      <p class="footer-text">Powered by <a href="https://openweathermap.org" target="_blank" rel="noopener noreferrer">OpenWeatherMap API</a></p>
+      <p class="footer-copy">Built with ❤️ using Vanilla JS &amp; CSS Glassmorphism</p>
+    </div>
+  </footer>
+
+  <!-- Toast notification container -->
+  <div class="toast-container" id="toast-container" aria-live="polite" aria-atomic="true"></div>
+
+  <script src="script.js"></script>
+</body>
+</html>
